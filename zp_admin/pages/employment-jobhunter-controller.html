@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>求职联系模块</title>
+	<style>
+		.menu{
+			float: right;
+		}
+		.menu > li {
+			float: left;
+			/*margin-right: 30px;*/
+			font-size: 20px;
+			/*border: 1px solid #007bff;*/
+			width: 32px;
+			text-align: center;
+		} 
+		#return{
+			display: none;
+		}
+	</style>
+</head>
+<body>
+<script>
+//提前声明的代码
+var baseURL = "http://203.195.246.58:7777";
+var cpage=1;//当前在多少页
+function getData(page,data){
+    var total = data.length;//总个数
+    var nums=10;//一页显示多少条记录
+    var sum_page;//总页数
+    //计算总页码
+    if (total%nums==0){
+        sum_page=parseInt(total/nums);
+    }else {
+        sum_page=parseInt(total/nums+1);
+    }
+    var newdata='';//新数据
+    cpage=page;//改变当前页面
+    var i = (cpage-1)*10;//公式：计算当前的索引
+    for(j=0;j<=9;j++){
+        if(data[i+j]==undefined){
+            break;
+        }
+        newdata += "<tr><td><input type='checkbox' value='"+data[i+j].id+"'></td><td>"+data[i+j].askTime+"</td><td>"+data[i+j].remark+"</td><td>"+data[i+j].employmentId+"</td><td>"+data[i+j].jobhunterId+"</td><td width='150px;'><a class='btn_del' href='javascript:void(0)'><i class='fa fa-trash text-danger mr-3 '></i></a><a class='btn_upd' href='javascript:void(0)'><i class='fa fa-edit text-warning'></i></a></td></tr>";
+    }
+    $('#employment_jobhunter_table > tbody').empty();
+    $('#employment_jobhunter_table > tbody').append(newdata);
+    getPage(data,cpage,sum_page);
+}
+function getPage(data,cpage,sum_page){
+    var list='';//数字列表
+    var num=2;//列表前后有几个数字
+    var num_page=cpage;//当前页码
+    var new_num;//动态页面
+    var jsondata = JSON.stringify(data);
+    
+    //当前数字之前
+    for(i=num;i>=1;i--){
+        new_num=num_page-i;
+        if(new_num>=1){
+            list+="<li><a href='javascript:void(0)' onclick='getData("+new_num+","+jsondata+")'>"+ new_num +"</a><li>";
+        }
+    }
+    //当前数字
+    list+="<li>"+cpage+"<li>";
+    //当前数字之后
+    for(i=1;i<=num;i++){
+        new_num=num_page+i;
+        if(new_num<=sum_page){
+            list+="<li><a href='javascript:void(0)' onclick='getData("+new_num+","+jsondata+")'>"+new_num +"</a><li>";
+        }else{
+            break;
+        }
+    }
+    $('.menu').empty();
+    $('.menu').append(list);
+}
+
+//初始化数据
+function reloadData(){
+	var url = baseURL+"/EmploymentJobhunter/findAll";
+	// console.log(url);
+	$.get(url,function(result){
+		if(result.status === 200){
+			/*$("#employment_jobhunter_table tbody").empty();*///清空tbody列表
+			// console.log(result.data);
+			getData(cpage,result.data);
+			result.data.forEach(function(item){
+				// console.log(item);
+			});
+			//为搜索框追加下拉菜单
+			$("#employment_jobhunter_id_search").empty();
+			$("#employment_jobhunter_id_search").append($(`
+				<option selected disabled>请选择ID</option>
+				`));
+			result.data.forEach(function(item){
+			
+				$("#employment_jobhunter_id_search").append($(`
+				<option value="`+item.id+`">`+item.id+`</option>
+				`));
+			});
+		}
+	});
+}
+//初始化表单中意向职业ID的下拉菜单
+function SelectEmployment(){
+	var url = baseURL+"/Employment/findAll";
+	$.get(url,function(result){
+		$("#employment_jobhunter_form select[name=employmentId]").empty();//清空tbody列表
+		if(result.status === 200){
+			result.data.forEach(function(item){
+				// console.log(item);
+				$("#employment_jobhunter_form select[name=employmentId]").append($(`
+					<option value="`+item.id+`">`+item.id+`</option>
+				`));
+			});
+		}
+	});
+}
+//初始化表单中求职者ID的下拉菜单
+function SelectJobhunter(){
+	var url = baseURL+"/Jobhunter/findAll";
+	$.get(url,function(result){
+		$("#employment_jobhunter_form select[name=jobhunterId]").empty();//清空tbody列表
+		// console.log(result.data);
+		if(result.status === 200){
+			result.data.forEach(function(item){
+				// console.log(item);
+				$("#employment_jobhunter_form select[name=jobhunterId]").append($(`
+					<option value="`+item.id+`">`+item.id+`</option>
+				`));
+			});
+		}
+	});
+}
+
+//提交菜单
+function submitEmployment_jobhunter(){
+	//获取参数
+	var id = $("#employment_jobhunter_form input[name=id]").val();
+	// var askTime = $("#employment_jobhunter_form input[name=askTime]").val();
+	var remark = $("#employment_jobhunter_form input[name=remark]").val();
+	var employmentId = $("#employment_jobhunter_form select[name=employmentId]").val();
+	var jobhunterId = $("#employment_jobhunter_form select[name=jobhunterId]").val();
+	var url = baseURL+"/EmploymentJobhunter/saveOrUpdate";
+	var data;
+	// console.log(url,id,remark,employmentId,jobhunterId);
+	if (id) {
+		data = {
+			id:id,
+			remark:remark,
+			employmentId:employmentId,
+			jobhunterId:jobhunterId
+		}
+	}else{
+		data = {
+			remark:remark,
+			employmentId:employmentId,
+			jobhunterId:jobhunterId
+		}
+	}
+	$.post(url,data,function(result){
+		if (result.status === 200) {
+			closeEmployment_jobhunterModal();
+			reloadData();
+			alert("添加成功");
+		} else {
+			alert(result.message);
+		}
+	});
+}
+
+
+//关闭模态框
+function closeEmployment_jobhunterModal(){
+	$("#employment_jobhunterModal").modal("hide");
+}
+$(function(){
+	reloadData();
+	//为删除修改按钮绑定事件
+	$("#employment_jobhunter_table tbody").on("click","a",function(){
+		// alert(1);
+		switch(this.className){
+			case"btn_del":
+				// alert(2);
+				var url = baseURL+"/EmploymentJobhunter/deleteById";
+				var id = $(this).parents("tr").find("input").val();
+				// console.log(id);
+				var data = "id="+id;
+				// console.log(data);
+				//确认是否删除
+				var result = confirm("确认删除吗?");
+					if(result){
+						// alert(1);
+						$.post(url,data,function(result){
+						alert(result.message);
+						reloadData();
+						});
+					}
+				break;
+			case"btn_upd":
+				// alert(3);
+				$("#employment_jobhunterModal").modal("show");
+				//获取数据
+				var id = $(this).parents("tr").find("input").val();
+				// var askTime =$(this).parents("tr").children()[1].innerText;
+				var remark =$(this).parents("tr").children()[2].innerText;
+				var employmentId =$(this).parents("tr").children()[3].innerText;
+				var jobhunterId =$(this).parents("tr").children()[4].innerText;
+				// console.log(id,askTime,remark,employmentId,jobhunterId);
+				//传送数据
+				$("#employment_jobhunter_form input[name=id]").val(id);
+				$("#employment_jobhunter_form input[name=remark]").val(remark);
+				$("#employment_jobhunter_form select[name=employmentId]").val(employmentId);
+				$("#employment_jobhunter_form select[name=jobhunterId]").val(jobhunterId);
+				break;
+		}
+	});
+	//为搜索按钮绑定事件
+	$("#employment_jobhunter_btn_search").click(function(){
+		// alert(1);
+		var url = baseURL+"/EmploymentJobhunter/findById";
+		var id = $("#employment_jobhunter_id_search").val();
+		// console.log(id);
+		var data = "id="+id;
+		// console.log(data);
+		$.get(url,data,function(result){
+		
+			$("#employment_jobhunter_table tbody").empty();//清空tbody列表
+			// console.log(result.data);
+			$("#employment_jobhunter_table tbody").append($(`
+			<tr>
+				<td><input type="checkbox"  value="`+result.data.id+`"></td>
+				<td>`+result.data.askTime+`</td>
+				<td>`+result.data.remark+`</td>
+				<td>`+result.data.employmentId+`</td>
+				<td>`+result.data.jobhunterId+`</td>
+				<td>
+					<a class="btn_del" href="javascript:void(0)"><i class="fa fa-trash text-danger mr-5 "></i></a>
+					<a class="btn_upd" href="javascript:void(0)"><i class="fa fa-edit text-warning"></i></a>
+				</td>
+			</tr>
+			`));
+	});
+		$("#return").show();
+		$(".menu").hide();
+	});
+	//为返回按钮绑定事件
+	$("#return").click(function(){
+		reloadData();
+		$("#return").hide();
+		$(".menu").show();
+	});
+	//给全选按钮绑定事件
+	$("#selectall").click(function(){
+		if(this.checked){
+			$("table input[type=checkbox]").attr("checked",true)
+		} else {
+			$("table input[type=checkbox]").attr("checked",false)
+		}
+	})
+});
+
+
+
+
+// =============文档加载完毕后执行
+//初始化数据
+$(function(){
+	// 1. 初始化数据
+	reloadData();
+	SelectEmployment();
+	SelectJobhunter();
+	// 3. 为添加按钮绑定事件
+	$("#employment_jobhunter_btn_add").click(function(){
+		$("#employment_jobhunterModal").modal("show");
+	})
+	// 4. 监听模态框的关闭
+	$("#employment_jobhunterModal").on('hidden.bs.modal',function(e){
+		$(this).find("form")[0].reset();//不加[0]则为jQuery对象，加了才为DOM对象
+	})
+});
+</script>
+
+
+<!-- 内容 -->
+<div class="col-12 form-inline p-0 m-0">
+	<div class="bg-white col-1 text-center " style="width: 130px;line-height: 50px;font-size: 20px;border-top: 3px solid blue;margin: 0 15px; background-color: #fff">
+		求职列表
+	</div>
+	<div class="col-10 text-right p-0 m-0">
+		
+	</div>
+</div>
+<div class="zpz col-12 p-0 m-0">
+	<!-- 导航 -->
+	<div class="row col-12 form-inline" style="margin-top: 10px;">
+		<div class="select_form form-group col-9">
+			
+	    	<button class="btn btn-outline-warning mr-4" id="employment_jobhunter_btn_add">添加</button>
+			<button class="btn btn-outline-info mr-4" id="employment_jobhunter_btn_lead">更多操作</button>
+		</div>
+		<!-- 按钮 -->
+		<div class=" col-3 form-inline text-right" id="employment_jobhunter_search">
+			<select class="form-control mr-sm-2 border-info" placeholder="请输入ID" id="employment_jobhunter_id_search" style="width: 150px;"></select>
+			<button class="btn btn-outline-success  my-sm-0 mr-3" id="employment_jobhunter_btn_search">搜索</button>
+			<button class="btn btn-outline-danger" id="return">返回</button>
+		</div>
+	<!-- /按钮 -->
+	</div>
+
+	<!-- 表格 -->
+	<div class=" col-sm-12 mt-3">
+		<table class="table table-light table-bordered table-hover text-center" id="employment_jobhunter_table">
+			<thead class="thead-dark">
+				<tr>
+					<th><input type="checkbox"  name="check" id="selectall"></th>
+					<th>求职时间</th>
+					<th>联系方式</th>
+					<th>意向职业ID</th>
+					<th>求职者ID</th>
+					<th>操作</th>
+				</tr>
+			</thead>
+			<tbody>
+				
+			</tbody>
+		</table>
+	</div>
+	<!-- /表格 -->
+	<ul class="menu"></ul>
+</div>
+</body>
+</html>
